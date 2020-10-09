@@ -1,0 +1,16 @@
+[package]
+name = "digital-garden"
+description = "A tool for authoring and syncing digital gardens"
+version = "0.1.0"
+authors = ["Christopher Biscardi <chris@christopherbiscardi.com>"]
+edition = "2018"
+license = "MIT"
+readme = "./README.md"
+keywords = ["garden", "digital"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "garden"
+path = "src/main.rs"
+
+[dependencies]
