@@ -14,3 +14,7 @@ name = "garden"
 path = "src/main.rs"
 
 [dependencies]
+directories = "3.0.1"
+color-eyre = "0.5.6"
+tracing = "0.1.21"
+structopt = "0.3.19"
