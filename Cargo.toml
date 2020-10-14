@@ -18,3 +18,13 @@ directories = "3.0.1"
 color-eyre = "0.5.6"
 tracing = "0.1.21"
 structopt = "0.3.19"
+edit = "0.1.2"
+rprompt = "1.0.5"
+slug = "0.1.4"
+pulldown-cmark = "0.8.0"
+owo-colors = "1.1.3"
+
+[dev-dependencies]
+assert_fs = "1.0.0"
+escargot = "0.5.0"
+assert_cmd = "1.0.1"
