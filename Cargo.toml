@@ -21,8 +21,13 @@ structopt = "0.3.19"
 edit = "0.1.2"
 rprompt = "1.0.5"
 slug = "0.1.4"
-pulldown-cmark = "0.8.0"
 owo-colors = "1.1.3"
+serde = "1.0.116"
+[dependencies.confy]
+git = "https://github.com/rust-cli/confy"
+commit = "baf2b401c9b4e783599ac8c74a6a9829a27f0deb"
+features = ["yaml_conf"]
+default-features = false
 
 [dev-dependencies]
 assert_fs = "1.0.0"
