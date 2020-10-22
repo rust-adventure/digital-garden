@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::{info, instrument};
@@ -83,12 +84,22 @@ enum Command {
         all: bool,
         files: Vec<String>,
     },
-    /// Write to a sparkfile.
+    /// Search for files
+    Search {
+        #[structopt(short)]
+        tags: Vec<String>,
+    },
+    /// Write something
+    Write {
+        #[structopt(short, long)]
+        title: Option<String>,
+    },
+    /// allows writing to a sparkfile.
     ///
     /// A sparkfile is a date-oriented markdown file that collects thoughts you
     /// have now.
     ///
-    /// Put something here to get it out of your head now and work on it later.
+    /// Put something in a sparkfile to get it out of your head now and work on it later.
     ///
     /// This command can also be useful to integrate with Alfred and other
     /// application launches
@@ -96,12 +107,6 @@ enum Command {
         #[structopt(short)]
         message: String,
     },
-    /// Search for files
-    Search {
-        #[structopt(short)]
-        tags: Vec<String>,
-    },
-    Write,
 }
 
 fn ask_for_filename() -> String {
@@ -179,7 +184,7 @@ fn main() -> Result<(), Report> {
 
             Ok(())
         }
-        Command::Write => {
+        Command::Write { title } => {
             // file template
             let template = "# ";
             let mut builder = Builder::new();
@@ -258,7 +263,19 @@ content: {}
             //
             Ok(())
         }
-        Command::Spark { message } => Ok(()),
+        Command::Spark { message } => {
+            // write to spark file
+            let mut sparkfile_path = garden_path.join("spark");
+            sparkfile_path.set_extension("md");
+            let mut sparkfile = fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(sparkfile_path)?;
+            write!(&mut sparkfile, "\n{}", message)?;
+
+            // fs::write(sparkfile, &edited)?;
+            Ok(())
+        }
         Command::Search { tags } => Ok(()),
         Command::Sync {
             interactive,
