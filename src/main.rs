@@ -204,8 +204,8 @@ fn main() -> Result<(), Report> {
                 .default(0)
                 .interact_on_opt(&Term::stderr())?;
 
-            match selection {
-                Some(index) => {
+            match (selection, preview) {
+                (Some(index), false) => {
                     let ss = SyntaxSet::load_defaults_newlines();
                     let ts = ThemeSet::load_defaults();
 
@@ -217,12 +217,13 @@ fn main() -> Result<(), Report> {
                         {
                             let regions: Vec<(Style, &str)> =
                                 highlighter.highlight_lines.highlight(&line, &ss);
-                            print!("{}", as_24_bit_terminal_escaped(&regions[..], true));
+                            print!("{}", as_24_bit_terminal_escaped(&regions[..], false));
                         } // until NLL this scope is needed so we can clear the buffer after
                         line.clear(); // read_line appends so we need to clear between lines
                     }
                 }
-                None => println!("User did not select anything"),
+                (Some(index), true) => {}
+                _ => println!("User did not select anything"),
             }
             Ok(())
         }
