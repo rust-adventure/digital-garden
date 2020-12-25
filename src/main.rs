@@ -1,14 +1,34 @@
+#![feature(bool_to_option)]
 use color_eyre::eyre::{eyre, Report, Result, WrapErr};
 use directories::UserDirs;
 use edit::Builder;
 use owo_colors::OwoColorize;
+use pulldown_cmark::{html, CodeBlockKind, CowStr, Event, Options, Parser, Tag};
 use std::fs;
 use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
+use syntect::highlighting::{Color, ThemeSet};
+use syntect::html::highlighted_html_for_string;
+use syntect::parsing::SyntaxSet;
 use tracing::{info, instrument};
+use walkdir::WalkDir;
 
 use digital_garden::write;
+
+const HTML_TEMPLATE_START: &str = r#"<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://unpkg.com/tailwindcss@^2/dist/base.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/tailwindcss@^2/dist/components.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@tailwindcss/typography@0.2.x/dist/typography.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/tailwindcss@^2/dist/utilities.min.css" />
+  </head>
+  <body>
+  <article class="max-w-prose mx-auto prose lg:prose-xl mt-12">"#;
+const HTML_TEMPLATE_END: &str = r#"</article></body></html>"#;
 
 /// maintain your garden
 ///
@@ -51,6 +71,10 @@ enum Command {
         #[structopt(short, long)]
         output: PathBuf,
     },
+    Read {
+        #[structopt(short, long)]
+        preview: bool,
+    },
 }
 
 #[instrument]
@@ -59,6 +83,12 @@ fn get_default_garden_dir() -> PathBuf {
     user_dirs.home_dir().join(".garden")
 }
 
+fn highlight(text: &str, lang: &str) -> String {
+    let ss = SyntaxSet::load_defaults_newlines();
+    let ts = ThemeSet::load_defaults();
+    let theme = &ts.themes["Solarized (light)"];
+    highlighted_html_for_string(&text, &ss, ss.find_syntax_by_token(lang).unwrap(), theme)
+}
 #[instrument]
 fn main() -> Result<(), Report> {
     #[cfg(feature = "capture-spantrace")]
@@ -81,12 +111,81 @@ fn main() -> Result<(), Report> {
                 .append(true)
                 .open(sparkfile_path)?;
             write!(&mut sparkfile, "\n{}", message)?;
-
-            // fs::write(sparkfile, &edited)?;
             Ok(())
         }
-        Command::Search { tags } => Ok(()),
-        Command::Publish { output } => Ok(()),
+        Command::Search { tags } => {
+            // dbg!(tags);
+            for entry in WalkDir::new(garden_path)
+                .into_iter()
+                .filter_map(|e| e.ok().and_then(|e2| e2.path().is_file().then_some(e2)))
+            {
+                // println!("{}", &entry.path().display());
+                let content = fs::read_to_string(&entry.path())?;
+                if tags
+                    .iter()
+                    .any(|tag| content.contains(&format!("#{}", tag)))
+                {
+                    println!("{}", entry.path().display())
+                }
+                // TODO ideas:
+                // print the paths without the user prefix
+                // optionally use a pager (minus) to display them all
+                // how would this output pipe into another program?
+            }
+            Ok(())
+        }
+        Command::Publish { output } => {
+            for entry in WalkDir::new(&garden_path)
+                .into_iter()
+                .filter_map(|e| e.ok().and_then(|e2| e2.path().is_file().then_some(e2)))
+            {
+                let file_name = &entry.path().strip_prefix(&garden_path).unwrap();
+                let content = fs::read_to_string(&entry.path())?;
+
+                // Set up options and parser. Strikethroughs are not part of the CommonMark standard
+                // and we therefore must enable it explicitly.
+                let mut options = Options::empty();
+                options.insert(Options::ENABLE_STRIKETHROUGH);
+                let parser = Parser::new_ext(&content, options)
+                    .scan(None, |state: &mut Option<String>, v| match v {
+                        Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(block))) => {
+                            *state = Some(block.to_string());
+                            Some(None)
+                        }
+                        Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(block))) => {
+                            *state = None;
+                            Some(None)
+                        }
+                        Event::Text(text) => match state {
+                            Some(lang) => {
+                                let html = highlight(&*text, lang);
+                                Some(Some(Event::Html(CowStr::Boxed(Box::from(html)))))
+                            }
+                            None => Some(Some(Event::Text(text))),
+                        },
+                        _ => Some(Some(v)),
+                    })
+                    .filter_map(|v| v);
+
+                // Write to String buffer.
+                let mut html_output = String::new();
+                html::push_html(&mut html_output, parser);
+                let mut output_file = output.join(file_name);
+                output_file.set_extension("html");
+                fs::write(
+                    output_file,
+                    format!(
+                        "{}{}{}",
+                        HTML_TEMPLATE_START, html_output, HTML_TEMPLATE_END
+                    ),
+                );
+            }
+            Ok(())
+        }
+        Command::Read { preview } => {
+            println!("{}", "read");
+            Ok(())
+        }
     }
 }
 

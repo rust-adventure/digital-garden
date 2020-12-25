@@ -112,8 +112,8 @@ pub fn write(garden_path: PathBuf, title: Option<String>) -> Result<()> {
     };
 
     // move tempfile into garden with a name
-    let destination_name = loop {
-        let mut i: usize = 0;
+    let mut i: usize = 0;
+    loop {
         let dest_filename = format!(
             "{}{}",
             filename,
@@ -129,9 +129,9 @@ pub fn write(garden_path: PathBuf, title: Option<String>) -> Result<()> {
             i = i + 1;
         } else {
             fs::rename(garden_tmpfile, &dest)?;
-            break dest;
+            break;
         }
-    };
+    }
 
     Ok(())
 }
