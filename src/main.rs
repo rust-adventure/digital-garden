@@ -1,16 +1,23 @@
 #![feature(bool_to_option)]
 use color_eyre::eyre::{eyre, Report, Result, WrapErr};
+use console::Term;
+use dialoguer::{theme::ColorfulTheme, Select};
 use directories::UserDirs;
 use edit::Builder;
 use owo_colors::OwoColorize;
 use pulldown_cmark::{html, CodeBlockKind, CowStr, Event, Options, Parser, Tag};
 use std::fs;
+use std::io::BufRead;
 use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use syntect::highlighting::{Color, ThemeSet};
-use syntect::html::highlighted_html_for_string;
-use syntect::parsing::SyntaxSet;
+use syntect::{
+    easy::HighlightFile,
+    highlighting::{Color, Style, ThemeSet},
+    html::highlighted_html_for_string,
+    parsing::SyntaxSet,
+    util::as_24_bit_terminal_escaped,
+};
 use tracing::{info, instrument};
 use walkdir::WalkDir;
 
@@ -183,7 +190,40 @@ fn main() -> Result<(), Report> {
             Ok(())
         }
         Command::Read { preview } => {
-            println!("{}", "read");
+            let files = WalkDir::new(&garden_path)
+                .into_iter()
+                .filter_map(|e| e.ok().and_then(|e2| e2.path().is_file().then_some(e2)))
+                .map(|e| e.path().to_path_buf())
+                .collect::<Vec<std::path::PathBuf>>();
+            let items_for_display = files
+                .iter()
+                .map(|p| p.file_name().unwrap().to_string_lossy())
+                .collect::<Vec<std::borrow::Cow<'_, str>>>();
+            let selection = Select::with_theme(&ColorfulTheme::default())
+                .items(&items_for_display)
+                .default(0)
+                .interact_on_opt(&Term::stderr())?;
+
+            match selection {
+                Some(index) => {
+                    let ss = SyntaxSet::load_defaults_newlines();
+                    let ts = ThemeSet::load_defaults();
+
+                    let mut highlighter =
+                        HighlightFile::new(&files[index], &ss, &ts.themes["Solarized (dark)"])
+                            .unwrap();
+                    let mut line = String::new();
+                    while highlighter.reader.read_line(&mut line)? > 0 {
+                        {
+                            let regions: Vec<(Style, &str)> =
+                                highlighter.highlight_lines.highlight(&line, &ss);
+                            print!("{}", as_24_bit_terminal_escaped(&regions[..], true));
+                        } // until NLL this scope is needed so we can clear the buffer after
+                        line.clear(); // read_line appends so we need to clear between lines
+                    }
+                }
+                None => println!("User did not select anything"),
+            }
             Ok(())
         }
     }

@@ -31,6 +31,8 @@ tempfile = "3.1.0"
 walkdir = "2.3.1"
 pulldown-cmark = "0.8.0"
 syntect = "4.5.0"
+dialoguer = "0.7.1"
+console = "0.13.0"
 
 
 [dev-dependencies]
