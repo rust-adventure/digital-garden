@@ -2,9 +2,7 @@ use color_eyre::eyre::{eyre, Result, WrapErr};
 use edit::Builder;
 use owo_colors::OwoColorize;
 use std::fs;
-use std::io::Write;
 use std::path::PathBuf;
-use tempfile::NamedTempFile;
 use tracing::instrument;
 
 const DEFAULT_TEMPLATE: &str = "# ";

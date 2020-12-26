@@ -1,24 +1,26 @@
 #![feature(bool_to_option)]
-use color_eyre::eyre::{eyre, Report, Result, WrapErr};
+use color_eyre::eyre::{Report, Result, WrapErr};
 use console::Term;
 use dialoguer::{theme::ColorfulTheme, Select};
 use directories::UserDirs;
-use edit::Builder;
-use owo_colors::OwoColorize;
+// use edit::Builder;
+use minus::LineNumbers;
+// use owo_colors::OwoColorize;
 use pulldown_cmark::{html, CodeBlockKind, CowStr, Event, Options, Parser, Tag};
+use std::fmt::Write as fmtWrite;
 use std::fs;
 use std::io::BufRead;
-use std::io::Write;
+use std::io::Write as ioWrite;
 use std::path::PathBuf;
 use structopt::StructOpt;
 use syntect::{
     easy::HighlightFile,
-    highlighting::{Color, Style, ThemeSet},
+    highlighting::{Style, ThemeSet},
     html::highlighted_html_for_string,
     parsing::SyntaxSet,
     util::as_24_bit_terminal_escaped,
 };
-use tracing::{info, instrument};
+use tracing::instrument;
 use walkdir::WalkDir;
 
 use digital_garden::write;
@@ -159,7 +161,7 @@ fn main() -> Result<(), Report> {
                             *state = Some(block.to_string());
                             Some(None)
                         }
-                        Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(block))) => {
+                        Event::End(Tag::CodeBlock(CodeBlockKind::Fenced(_))) => {
                             *state = None;
                             Some(None)
                         }
@@ -178,14 +180,15 @@ fn main() -> Result<(), Report> {
                 let mut html_output = String::new();
                 html::push_html(&mut html_output, parser);
                 let mut output_file = output.join(file_name);
-                output_file.set_extension("html");
+                &output_file.set_extension("html");
                 fs::write(
-                    output_file,
+                    &output_file,
                     format!(
                         "{}{}{}",
                         HTML_TEMPLATE_START, html_output, HTML_TEMPLATE_END
                     ),
-                );
+                )
+                .wrap_err(format!("failed to write {:?}", &output_file))?;
             }
             Ok(())
         }
@@ -206,23 +209,31 @@ fn main() -> Result<(), Report> {
 
             match (selection, preview) {
                 (Some(index), false) => {
+                    let mut output = minus::Pager::new()
+                        .set_line_numbers(LineNumbers::Enabled)
+                        .set_prompt(files[index].file_name().unwrap().to_string_lossy());
+
                     let ss = SyntaxSet::load_defaults_newlines();
                     let ts = ThemeSet::load_defaults();
 
                     let mut highlighter =
-                        HighlightFile::new(&files[index], &ss, &ts.themes["Solarized (dark)"])
-                            .unwrap();
+                        HighlightFile::new(&files[index], &ss, &ts.themes["Solarized (dark)"])?;
                     let mut line = String::new();
                     while highlighter.reader.read_line(&mut line)? > 0 {
                         {
                             let regions: Vec<(Style, &str)> =
                                 highlighter.highlight_lines.highlight(&line, &ss);
-                            print!("{}", as_24_bit_terminal_escaped(&regions[..], false));
+                            write!(
+                                output.lines,
+                                "{}",
+                                as_24_bit_terminal_escaped(&regions[..], false)
+                            )?;
                         } // until NLL this scope is needed so we can clear the buffer after
                         line.clear(); // read_line appends so we need to clear between lines
                     }
+                    minus::page_all(output)?;
                 }
-                (Some(index), true) => {}
+                (Some(_index), true) => {}
                 _ => println!("User did not select anything"),
             }
             Ok(())
