@@ -27,6 +27,8 @@ fn main() -> Result<()> {
     color_eyre::install()?;
 
     let opt = Opt::from_args();
-    dbg!(opt);
-    todo!()
+    dbg!(&opt);
+    match opt.cmd {
+        Command::Write { title: _ } => todo!(),
+    }
 }
