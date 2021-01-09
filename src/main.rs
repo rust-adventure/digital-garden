@@ -38,7 +38,6 @@ fn main() -> Result<()> {
     color_eyre::install()?;
 
     let opt = Opt::from_args();
-    dbg!(&opt);
     let garden_path = match opt.garden_path {
         Some(pathbuf) => Ok(pathbuf),
         None => get_default_garden_dir().wrap_err("`garden_path` was not supplied"),
