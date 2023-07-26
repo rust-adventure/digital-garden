@@ -1,4 +1,7 @@
-use clap::{Parser, Subcommand};
+use clap::{
+    error::ErrorKind, CommandFactory, Parser, Subcommand,
+};
+use directories::UserDirs;
 use std::path::PathBuf;
 
 /// A CLI for the growing and curation of a digital garden
@@ -27,7 +30,40 @@ enum Commands {
     },
 }
 
+/// Get the user's garden directory, which by default
+/// is placed in their home directory
+fn get_default_garden_dir() -> Option<PathBuf> {
+    UserDirs::new()
+        .map(|dirs| dirs.home_dir().join("garden"))
+}
+
 fn main() {
     let args = Args::parse();
-    dbg!(args);
+    dbg!(&args);
+
+    let Some(garden_path) =
+        args.garden_path.or_else(get_default_garden_dir)
+    else {
+        let mut cmd = Args::command();
+        cmd.error(
+            ErrorKind::ValueValidation,
+            format!(
+                "garden directory not provided and home directory unavailable for default garden directory"
+            ),
+        )
+        .exit()
+    };
+    if !garden_path.exists() {
+        let mut cmd = Args::command();
+        cmd.error(
+            ErrorKind::ValueValidation,
+            format!(
+                "garden directory `{}` doesn't exist, or is inaccessible",
+                garden_path.display()
+            ),
+        )
+        .exit()
+    };
+
+    dbg!(garden_path);
 }
