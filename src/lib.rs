@@ -1,6 +1,6 @@
 use edit::{edit_file, Builder};
 use miette::Diagnostic;
-use owo_colors::OwoColorize;
+use owo_colors::{OwoColorize, Stream::Stdout, Style};
 use std::{fs, io::Write};
 use std::{io, path::PathBuf};
 use thiserror::Error;
@@ -113,8 +113,8 @@ fn ask_for_filename() -> io::Result<String> {
         "\
 Enter filename
 > "
-        .blue()
-        .bold(),
+        .if_supports_color(Stdout, |text| text
+            .style(Style::new().blue().bold())),
     ))
     .map(|title| slug::slugify(title))
 }
@@ -128,7 +128,11 @@ fn confirm_filename(raw_title: &str) -> io::Result<String> {
             "\
 {} {}
 Do you want a different title? (y/N): ",
-            "current title:".green().bold(),
+            "current title:".if_supports_color(
+                Stdout,
+                |text| text
+                    .style(Style::new().green().bold())
+            ),
             raw_title,
         ))?;
 
