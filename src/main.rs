@@ -1,27 +1,22 @@
-use clap::StructOpt;
-use color_eyre::eyre::{eyre, Result, WrapErr};
-use digital_garden::write;
+use clap::{Parser, Subcommand};
 use directories::UserDirs;
+use garden::write;
+use miette::{miette, Context, IntoDiagnostic, Result};
 use std::path::PathBuf;
 /// A CLI for the growing and curation of a digital garden
 ///
-/// Visit https://www.rustadventure.rs/garden for more!
-#[derive(StructOpt, Debug)]
-#[structopt(name = "garden")]
-struct Opt {
-    #[structopt(
-        parse(from_os_str),
-        short = 'p',
-        long,
-        env
-    )]
+/// Visit https://www.rustadventure.dev for more!
+#[derive(Parser, Debug)]
+#[clap(version)]
+struct Args {
+    #[clap(short = 'p', long, env)]
     garden_path: Option<PathBuf>,
 
-    #[structopt(subcommand)]
-    cmd: Command,
+    #[command(subcommand)]
+    cmd: Commands,
 }
-#[derive(StructOpt, Debug)]
-enum Command {
+#[derive(Subcommand, Debug)]
+enum Commands {
     /// write something in your garden
     ///
     /// This command will open your $EDITOR, wait for you
@@ -29,24 +24,30 @@ enum Command {
     /// garden
     Write {
         /// Optionally set a title for what you are going to write about
-        #[structopt(short, long)]
+        #[clap(short, long)]
         title: Option<String>,
     },
 }
 
-fn get_default_garden_dir() -> Result<PathBuf> {
-    let user_dirs = UserDirs::new().ok_or_else(|| eyre!("Could not find home directory"))?;
-    Ok(user_dirs.home_dir().join(".garden"))
+/// Get the user's garden directory, which by default
+/// is placed in their home directory
+fn get_default_garden_dir() -> Option<PathBuf> {
+    UserDirs::new()
+        .map(|dirs| dirs.home_dir().join("garden"))
 }
 fn main() -> Result<()> {
-    color_eyre::install()?;
+    let args = Args::parse();
 
-    let opt = Opt::parse();
-    let garden_path = match opt.garden_path {
-        Some(pathbuf) => Ok(pathbuf),
-        None => get_default_garden_dir().wrap_err("`garden_path` was not supplied"),
-    }?;
-    match opt.cmd {
-        Command::Write { title } => write(garden_path, title),
+    let garden_path = args
+        .garden_path
+        .or_else(get_default_garden_dir)
+        .ok_or(miette!("Could not find home directory"))?;
+
+    match args.cmd {
+        Commands::Write { title } => {
+            write(garden_path, title)
+                .into_diagnostic()
+                .wrap_err("garden::write")
+        }
     }
 }

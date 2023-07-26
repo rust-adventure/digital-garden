@@ -1,6 +1,6 @@
 use assert_cmd::Command;
 use assert_fs::prelude::*;
-use color_eyre::eyre::Result;
+use miette::{IntoDiagnostic, Result};
 use predicates::prelude::*;
 
 fn setup_command() -> (Command, assert_fs::TempDir) {
@@ -17,15 +17,19 @@ fn setup_command() -> (Command, assert_fs::TempDir) {
         )
     }
 
-    cmd.env("EDITOR", fake_editor_path.into_os_string())
-        .env("GARDEN_PATH", temp_dir.path());
+    cmd.env(
+        "EDITOR",
+        fake_editor_path.into_os_string(),
+    )
+    .env("GARDEN_PATH", temp_dir.path());
     (cmd, temp_dir)
 }
 
 #[test]
 /// make sure help runs. This indicates the binary works
 fn test_help() -> Result<()> {
-    let mut cmd = Command::cargo_bin("garden")?;
+    let mut cmd =
+        Command::cargo_bin("garden").into_diagnostic()?;
     let assert = cmd.arg("--help").assert();
     assert.success().stderr("");
     Ok(())
@@ -34,7 +38,8 @@ fn test_help() -> Result<()> {
 #[test]
 /// make sure we have a write command by running `garden write --help`
 fn test_write_help() -> Result<()> {
-    let mut cmd = Command::cargo_bin("garden")?;
+    let mut cmd =
+        Command::cargo_bin("garden").into_diagnostic()?;
     let assert = cmd.arg("write").arg("--help").assert();
     assert.success().stderr("");
     Ok(())
