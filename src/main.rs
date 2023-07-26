@@ -1,7 +1,7 @@
 use clap::{Parser, Subcommand};
 use directories::UserDirs;
 use garden::write;
-use miette::{miette, Context, IntoDiagnostic, Result};
+use miette::{miette, Context, Result};
 use std::path::PathBuf;
 /// A CLI for the growing and curation of a digital garden
 ///
@@ -46,7 +46,6 @@ fn main() -> Result<()> {
     match args.cmd {
         Commands::Write { title } => {
             write(garden_path, title)
-                .into_diagnostic()
                 .wrap_err("garden::write")
         }
     }
