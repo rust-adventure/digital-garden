@@ -1,5 +1,5 @@
 use edit::{edit_file, Builder};
-use std::{io::Write, path::PathBuf};
+use std::{fs, io::Write, path::PathBuf};
 
 pub fn write(
     garden_path: PathBuf,
@@ -12,8 +12,18 @@ pub fn write(
         .keep()?;
     dbg!(&filepath);
     let template =
-        format!("# {}", title.unwrap_or("".to_string()));
+        format!("# {}", title.as_deref().unwrap_or(""));
     file.write_all(template.as_bytes())?;
     edit_file(&filepath)?;
+    let contents = fs::read_to_string(&filepath)?;
+
+    let document_title = title.or_else(|| {
+        contents.lines().find(|v| v.starts_with("# ")).map(
+            |line| {
+                line.trim_start_matches("# ").to_string()
+            },
+        )
+    });
+    dbg!(document_title);
     Ok(())
 }
