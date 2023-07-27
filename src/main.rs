@@ -39,7 +39,6 @@ fn get_default_garden_dir() -> Option<PathBuf> {
 
 fn main() {
     let args = Args::parse();
-    dbg!(&args);
 
     let Some(garden_path) =
         args.garden_path.or_else(get_default_garden_dir)
@@ -65,5 +64,9 @@ fn main() {
         .exit()
     };
 
-    dbg!(garden_path);
+    match args.cmd {
+        Commands::Write { title } => {
+            garden::write(garden_path, title)
+        }
+    }
 }
