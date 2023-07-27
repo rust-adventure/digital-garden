@@ -30,10 +30,10 @@ pub fn write(
     });
 
     let filename = match document_title {
-        Some(raw_title) => slug::slugify(raw_title),
-        None => ask_for_filename()
-            .map(|title| slug::slugify(title))?,
-    };
+        Some(raw_title) => confirm_filename(&raw_title),
+        None => ask_for_filename(),
+    }
+    .map(|title| slug::slugify(title))?;
 
     let mut dest = garden_path.join(filename);
     dest.set_extension("md");
@@ -48,4 +48,29 @@ fn ask_for_filename() -> io::Result<String> {
         "Enter filename
 > ",
     )
+}
+
+fn confirm_filename(raw_title: &str) -> io::Result<String> {
+    loop {
+        // prompt defaults to uppercase character in question
+        // this is a convention, not a requirement enforced by
+        // the code
+        let result = rprompt::prompt_reply(&format!(
+            "current title: {}
+Do you want a different title? (y/N): ",
+            &raw_title,
+        ))?;
+
+        match result.as_str() {
+            "y" | "Y" => break ask_for_filename(),
+            "n" | "N" | "" => {
+                // the capital N in the prompt means "default",
+                // so we handle "" as input here
+                break Ok(raw_title.to_string());
+            }
+            _ => {
+                // ask again because something went wrong
+            }
+        };
+    }
 }
