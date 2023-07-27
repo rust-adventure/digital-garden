@@ -9,4 +9,5 @@ edition = "2021"
 clap = { version = "4.3.19", features = ["env", "derive"] }
 directories = "5.0.1"
 edit = "0.1.4"
+rprompt = "2.0.2"
 slug = "0.1.4"

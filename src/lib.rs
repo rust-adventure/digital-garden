@@ -1,5 +1,9 @@
 use edit::{edit_file, Builder};
-use std::{fs, io::Write, path::PathBuf};
+use std::{
+    fs,
+    io::{self, Write},
+    path::PathBuf,
+};
 
 pub fn write(
     garden_path: PathBuf,
@@ -27,9 +31,8 @@ pub fn write(
 
     let filename = match document_title {
         Some(raw_title) => slug::slugify(raw_title),
-        None => {
-            todo!("ask for filename");
-        }
+        None => ask_for_filename()
+            .map(|title| slug::slugify(title))?,
     };
 
     let mut dest = garden_path.join(filename);
@@ -38,4 +41,11 @@ pub fn write(
     dbg!(dest);
 
     Ok(())
+}
+
+fn ask_for_filename() -> io::Result<String> {
+    rprompt::prompt_reply(
+        "Enter filename
+> ",
+    )
 }
