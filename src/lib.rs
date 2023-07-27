@@ -35,10 +35,19 @@ pub fn write(
     }
     .map(|title| slug::slugify(title))?;
 
-    let mut dest = garden_path.join(filename);
-    dest.set_extension("md");
-    fs::rename(filepath, &dest)?;
-    dbg!(dest);
+    for attempt in 0.. {
+        let mut dest = garden_path.join(if attempt == 0 {
+            filename.clone()
+        } else {
+            format!("{filename}{:03}", -attempt)
+        });
+        dest.set_extension("md");
+        if dest.exists() {
+            continue;
+        }
+        fs::rename(filepath, &dest)?;
+        break;
+    }
 
     Ok(())
 }
