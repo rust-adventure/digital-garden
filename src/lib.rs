@@ -8,7 +8,7 @@ pub fn write(
     let (mut file, filepath) = Builder::new()
         .suffix(".md")
         .rand_bytes(5)
-        .tempfile_in(garden_path)?
+        .tempfile_in(&garden_path)?
         .keep()?;
     dbg!(&filepath);
     let template =
@@ -24,6 +24,18 @@ pub fn write(
             },
         )
     });
-    dbg!(document_title);
+
+    let filename = match document_title {
+        Some(raw_title) => slug::slugify(raw_title),
+        None => {
+            todo!("ask for filename");
+        }
+    };
+
+    let mut dest = garden_path.join(filename);
+    dest.set_extension("md");
+    fs::rename(filepath, &dest)?;
+    dbg!(dest);
+
     Ok(())
 }
