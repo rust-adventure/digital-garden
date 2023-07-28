@@ -2,6 +2,7 @@ use clap::{
     error::ErrorKind, CommandFactory, Parser, Subcommand,
 };
 use directories::UserDirs;
+use miette::Context;
 use std::path::PathBuf;
 
 /// A CLI for the growing and curation of a digital garden
@@ -37,7 +38,7 @@ fn get_default_garden_dir() -> Option<PathBuf> {
         .map(|dirs| dirs.home_dir().join("garden"))
 }
 
-fn main() -> Result<(), std::io::Error> {
+fn main() -> miette::Result<()> {
     let args = Args::parse();
 
     let Some(garden_path) =
@@ -67,6 +68,7 @@ fn main() -> Result<(), std::io::Error> {
     match args.cmd {
         Commands::Write { title } => {
             garden::write(garden_path, title)
+                .wrap_err("garden::write")
         }
     }
 }

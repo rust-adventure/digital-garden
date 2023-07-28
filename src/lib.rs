@@ -1,25 +1,61 @@
 use edit::{edit_file, Builder};
+use miette::Diagnostic;
 use owo_colors::OwoColorize;
 use std::{
     fs,
     io::{self, Write},
     path::PathBuf,
 };
+use thiserror::Error;
+
+#[derive(Error, Diagnostic, Debug)]
+pub enum GardenVarietyError {
+    #[error(transparent)]
+    #[diagnostic(code(garden::io_error))]
+    IoError(#[from] std::io::Error),
+
+    #[error("failed to create tempfile: {0}")]
+    #[diagnostic(code(garden::tempfile_create_error))]
+    TempfileCreationError(std::io::Error),
+
+    #[error("failed to keep tempfile: {0}")]
+    #[diagnostic(code(garden::tempfile_keep_error))]
+    TempfileKeepError(#[from] tempfile::PersistError),
+
+    #[error("Unable to read tempfile after passing edit control to user:\ntempfile: {filepath}\n{io_error}")]
+    #[diagnostic(
+        code(garden::tempfile_read_error),
+        help("Make sure your editor isn't moving the file away from the temporary location")
+    )]
+    TempfileReadError {
+        filepath: PathBuf,
+        io_error: std::io::Error,
+    },
+}
 
 pub fn write(
     garden_path: PathBuf,
     title: Option<String>,
-) -> Result<(), std::io::Error> {
+) -> miette::Result<(), GardenVarietyError> {
     let (mut file, filepath) = Builder::new()
         .suffix(".md")
         .rand_bytes(5)
-        .tempfile_in(&garden_path)?
+        .tempfile_in(&garden_path)
+        .map_err(|e| {
+            GardenVarietyError::TempfileCreationError(e)
+        })?
         .keep()?;
     let template =
         format!("# {}", title.as_deref().unwrap_or(""));
     file.write_all(template.as_bytes())?;
     edit_file(&filepath)?;
-    let contents = fs::read_to_string(&filepath)?;
+    let contents =
+        fs::read_to_string(&filepath).map_err(|e| {
+            GardenVarietyError::TempfileReadError {
+                filepath: filepath.clone(),
+                io_error: e,
+            }
+        })?;
 
     let document_title = title.or_else(|| {
         contents.lines().find(|v| v.starts_with("# ")).map(
