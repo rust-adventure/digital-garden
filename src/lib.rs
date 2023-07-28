@@ -1,4 +1,5 @@
 use edit::{edit_file, Builder};
+use owo_colors::OwoColorize;
 use std::{
     fs,
     io::{self, Write},
@@ -14,7 +15,6 @@ pub fn write(
         .rand_bytes(5)
         .tempfile_in(&garden_path)?
         .keep()?;
-    dbg!(&filepath);
     let template =
         format!("# {}", title.as_deref().unwrap_or(""));
     file.write_all(template.as_bytes())?;
@@ -55,7 +55,9 @@ pub fn write(
 fn ask_for_filename() -> io::Result<String> {
     rprompt::prompt_reply(
         "Enter filename
-> ",
+> "
+        .blue()
+        .bold(),
     )
 }
 
@@ -66,8 +68,9 @@ fn confirm_filename(raw_title: &str) -> io::Result<String> {
         // the code
         let result = rprompt::prompt_reply(&format!(
             "current title: {}
-Do you want a different title? (y/N): ",
-            &raw_title,
+Do you want a different title? (y/{}): ",
+            &raw_title.bold().green(),
+            "N".bold(),
         ))?;
 
         match result.as_str() {
