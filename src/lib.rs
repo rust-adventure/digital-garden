@@ -4,6 +4,7 @@ use owo_colors::OwoColorize;
 use std::{
     fs,
     io::{self, Write},
+    ops::Not,
     path::PathBuf,
 };
 use thiserror::Error;
@@ -119,9 +120,14 @@ Do you want a different title? (y/{}): ",
 }
 
 fn title_from_content(input: &str) -> Option<String> {
-    input.lines().find(|v| v.starts_with("# ")).map(
-        |line| line.trim_start_matches("# ").to_string(),
-    )
+    input.lines().find_map(|line| {
+        line.strip_prefix("# ").and_then(|title| {
+            title
+                .is_empty()
+                .not()
+                .then_some(title.to_string())
+        })
+    })
 }
 
 #[cfg(test)]
@@ -139,5 +145,10 @@ mod tests {
             title_from_content("# some title"),
             Some("some title".to_string())
         );
+    }
+
+    #[test]
+    fn title_from_content_no_title() {
+        assert_eq!(title_from_content("# "), None);
     }
 }
