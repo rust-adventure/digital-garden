@@ -57,13 +57,8 @@ pub fn write(
             }
         })?;
 
-    let document_title = title.or_else(|| {
-        contents.lines().find(|v| v.starts_with("# ")).map(
-            |line| {
-                line.trim_start_matches("# ").to_string()
-            },
-        )
-    });
+    let document_title =
+        title.or_else(|| title_from_content(&contents));
 
     let filename = match document_title {
         Some(raw_title) => confirm_filename(&raw_title),
@@ -120,5 +115,29 @@ Do you want a different title? (y/{}): ",
                 // ask again because something went wrong
             }
         };
+    }
+}
+
+fn title_from_content(input: &str) -> Option<String> {
+    input.lines().find(|v| v.starts_with("# ")).map(
+        |line| line.trim_start_matches("# ").to_string(),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn title_from_empty_string() {
+        assert_eq!(title_from_content(""), None);
+    }
+
+    #[test]
+    fn title_from_content_string() {
+        assert_eq!(
+            title_from_content("# some title"),
+            Some("some title".to_string())
+        );
     }
 }
