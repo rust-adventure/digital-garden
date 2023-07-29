@@ -1,0 +1,1 @@
+echo "testing" >> $1;

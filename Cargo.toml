@@ -10,7 +10,7 @@ clap = { version = "4.3.19", features = ["env", "derive"] }
 directories = "5.0.1"
 edit = "0.1.4"
 miette = { version = "5.10.0", features = ["fancy"] }
-owo-colors = "3.5.0"
+owo-colors = { version = "3.5.0", features = ["supports-colors"] }
 rprompt = "2.0.2"
 slug = "0.1.4"
 tempfile = "3.7.0"
@@ -18,3 +18,8 @@ thiserror = "1.0.44"
 
 [dev-dependencies]
 assert_cmd = "2.0.12"
+assert_fs = "1.0.13"
+predicates = "3.0.3"
+
+[target.'cfg(not(windows))'.dev-dependencies]
+rexpect = "0.5.0"
