@@ -2,23 +2,23 @@
 name = "garden"
 version = "0.1.0"
 authors = ["Christopher Biscardi <chris@christopherbiscardi.com>"]
-edition = "2021"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.3.19", features = ["env", "derive"] }
-miette = { version = "5.10.0", features = ["fancy"] }
-directories = "5.0.1"
-edit = "0.1.4"
-rprompt = "2.0.2"
-slug = "0.1.4"
-owo-colors = { version = "3.5.0", features = ["supports-colors"] }
-thiserror = "1.0.44"
-tempfile = "^3.1.0"
+clap = { version = "4.5.51", features = ["env", "derive"] }
+miette = { version = "7.6.0", features = ["fancy"] }
+directories = "6.0.0"
+edit = "0.1.5"
+rprompt = "2.2"
+slug = "0.1.6"
+owo-colors = { version = "4.2.3", features = ["supports-colors"] }
+thiserror = "2.0.17"
+tempfile = "3.23.0"
 
 [dev-dependencies]
-assert_cmd = "2.0.11"
-assert_fs = "1.0.0"
-predicates = "3.0.3"
-rexpect = "0.5.0"
+assert_cmd = "2.1.1"
+assert_fs = "1.1.3"
+predicates = "3.1.3"
+rexpect = "0.6.2"
