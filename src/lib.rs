@@ -97,7 +97,7 @@ pub fn write(
         let mut dest = garden_path.join(dest_filename);
         dest.set_extension("md");
         if dest.exists() {
-            i = i + 1;
+            i += 1;
         } else {
             fs::rename(filepath, &dest)?;
             break;
@@ -108,7 +108,7 @@ pub fn write(
 }
 
 fn ask_for_filename() -> io::Result<String> {
-    rprompt::prompt_reply(&format!(
+    rprompt::prompt_reply(format!(
         "{}",
         "\
 Enter filename
@@ -116,7 +116,7 @@ Enter filename
         .if_supports_color(Stdout, |text| text
             .style(Style::new().blue().bold())),
     ))
-    .map(|title| slug::slugify(title))
+    .map(slug::slugify)
 }
 
 fn confirm_filename(raw_title: &str) -> io::Result<String> {
@@ -124,7 +124,7 @@ fn confirm_filename(raw_title: &str) -> io::Result<String> {
         // prompt defaults to uppercase character in question
         // this is a convention, not a requirement enforced by
         // the code
-        let result = rprompt::prompt_reply(&format!(
+        let result = rprompt::prompt_reply(format!(
             "\
 {} {}
 Do you want a different title? (y/N): ",
