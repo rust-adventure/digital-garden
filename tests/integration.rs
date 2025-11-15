@@ -27,7 +27,7 @@ impl GardenExpectations for PtySession {
 fn setup_command() -> (Command, assert_fs::TempDir) {
     let temp_dir = assert_fs::TempDir::new().unwrap();
 
-    let bin_path = assert_cmd::cargo::cargo_bin("garden");
+    let bin_path = assert_cmd::cargo::cargo_bin!("garden");
     let fake_editor_path = std::env::current_dir()
         .expect("expect to be in a dir")
         .join("tests")
@@ -51,8 +51,7 @@ fn setup_command() -> (Command, assert_fs::TempDir) {
 /// make sure help runs. This indicates the binary works
 #[test]
 fn test_help() {
-    assert_cmd::Command::cargo_bin("garden")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("garden")
         .arg("--help")
         .assert()
         .success()
@@ -62,8 +61,7 @@ fn test_help() {
 /// make sure we have a write command by running `garden write --help`
 #[test]
 fn test_write_help() {
-    assert_cmd::Command::cargo_bin("garden")
-        .unwrap()
+    assert_cmd::cargo::cargo_bin_cmd!("garden")
         .arg("write")
         .arg("--help")
         .assert()
@@ -72,8 +70,8 @@ fn test_write_help() {
 }
 
 #[test]
-fn test_write_with_title(
-) -> Result<(), rexpect::error::Error> {
+fn test_write_with_title()
+-> Result<(), rexpect::error::Error> {
     let (mut cmd, temp_dir) = setup_command();
 
     cmd.arg("write").arg("-t").arg("atitle");
@@ -92,8 +90,8 @@ fn test_write_with_title(
 }
 
 #[test]
-fn test_write_with_written_title(
-) -> Result<(), rexpect::error::Error> {
+fn test_write_with_written_title()
+-> Result<(), rexpect::error::Error> {
     let (mut cmd, temp_dir) = setup_command();
     cmd.arg("write");
 
